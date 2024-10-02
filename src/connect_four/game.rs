@@ -1,34 +1,32 @@
 use crate::prelude::*;
 use std::fmt::{Display, Formatter};
 
-/// ```rs
-/// let game = Game::new("445".to_string());
-/// // game = Game { position: "445", grid: 270532608, mask: 274726912, state: NonTerminal }
-///
-/// let game = game.play("3").unwrap();
-/// // game = Game { position: "4453", grid: 4210688, mask: 274743296, state: NonTerminal }
-///
 /// ```
-/// ```s
-///         grid                    mask
-///  0  0  0  0  0  0  0     0  0  0  0  0  0  0
-///  0  0  0  0  0  0  0     0  0  0  0  0  0  0
-///  0  0  0  0  0  0  0     0  0  0  0  0  0  0
-///  0  0  0  0  0  0  0     0  0  0  0  0  0  0
-///  0  0  0  0  0  0  0     0  0  0  0  0  0  0
-///  0  0  0  1  0  0  0     0  0  0  1  0  0  0
-///  0  0  1  0  0  0  0     0  0  1  1  1  0  0
+/// use connect_four::prelude::*;
 ///
-///         bits                   display
-///  6 13 20 27 34 41 48     1  2  3  4  5  6  7
-///  5 12 19 26 33 40 47     .  .  .  .  .  .  .
-///  4 11 18 25 32 39 46     .  .  .  .  .  .  .
-///  3 10 17 24 31 38 45     .  .  .  .  .  .  .
-///  2  9 16 23 30 37 44     .  .  .  .  .  .  .
-///  1  8 15 22 29 36 43     .  .  .  O  .  .  .
-///  0  7 14 21 28 35 42     .  .  O  X  X  .  .
+/// let game1 = Game::new("445".to_string()).play("3").unwrap();
+/// let game2 = Game::new("4453".to_string());
+/// // Game { position: "4453", grid: 4210688, mask: 274743296, state: NonTerminal }
+/// assert_eq!(game1, game2);
 /// ```
-#[derive(Debug)]
+//         grid                    mask
+//  0  0  0  0  0  0  0     0  0  0  0  0  0  0
+//  0  0  0  0  0  0  0     0  0  0  0  0  0  0
+//  0  0  0  0  0  0  0     0  0  0  0  0  0  0
+//  0  0  0  0  0  0  0     0  0  0  0  0  0  0
+//  0  0  0  0  0  0  0     0  0  0  0  0  0  0
+//  0  0  0  1  0  0  0     0  0  0  1  0  0  0
+//  0  0  1  0  0  0  0     0  0  1  1  1  0  0
+//
+//         bits                   display
+//  6 13 20 27 34 41 48     1  2  3  4  5  6  7
+//  5 12 19 26 33 40 47     .  .  .  .  .  .  .
+//  4 11 18 25 32 39 46     .  .  .  .  .  .  .
+//  3 10 17 24 31 38 45     .  .  .  .  .  .  .
+//  2  9 16 23 30 37 44     .  .  .  .  .  .  .
+//  1  8 15 22 29 36 43     .  .  .  O  .  .  .
+//  0  7 14 21 28 35 42     .  .  O  X  X  .  .
+#[derive(Debug, PartialEq)]
 pub struct Game {
     position: String,
     grid: u64,
@@ -95,7 +93,6 @@ impl Game {
         Ok(grid)
     }
 
-
     fn get_state(grid: u64, mask: u64) -> State {
         for direction in [1, 6, 7, 8] {
             let intersected = grid << direction & grid;
@@ -157,7 +154,7 @@ impl Display for Game {
             }
             Draw => writeln!(f, "game drawn")?
         }
-        writeln!(f, "\x1b[0m")?;
+        write!(f, "\x1b[0m")?;
         Ok(())
     }
 }

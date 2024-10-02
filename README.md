@@ -1,10 +1,6 @@
 # connect_four
 
-Rust implementation of a perfect AI Connect Four solver.
-
-[//]: # (badges)
-
-[//]: # (visuals)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/yoonthegoon/connect_four.rs/rust.yml)](https://github.com/yoonthegoon/connect_four.rs/actions/workflows/rust.yml)
 
 ## Installation
 
@@ -14,12 +10,7 @@ cd connect_four.rs
 cargo build
 ```
 
-## Usage
-
-```shell
-# usage: connect_four [POSITION]
-connect_four 4453
-```
+[//]: # (## Usage)
 
 ## Acknowledgements
 
