@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::fmt::{Display, Formatter};
 
 /// ```rs
 /// let game = Game::new("445".to_string());
@@ -19,7 +20,7 @@ use crate::prelude::*;
 ///  0  0  1  0  0  0  0     0  0  1  1  1  0  0
 ///
 ///         bits                   display
-///  6 13 20 27 34 41 48
+///  6 13 20 27 34 41 48     1  2  3  4  5  6  7
 ///  5 12 19 26 33 40 47     .  .  .  .  .  .  .
 ///  4 11 18 25 32 39 46     .  .  .  .  .  .  .
 ///  3 10 17 24 31 38 45     .  .  .  .  .  .  .
@@ -51,6 +52,16 @@ impl Game {
         grid.play(move_).unwrap()
     }
 
+    fn get_state(grid: u64, mask: u64) -> State {
+        for direction in [1, 6, 7, 8] {
+            let intersected = grid << direction & grid;
+            if intersected << 2 * direction & intersected != 0 { return Win; }
+        }
+        if mask & 279258638311359 == 279258638311359 { Draw } else { NonTerminal }
+    }
+
+    /// returns new game where move_ was played
+    /// error if game.state is terminal, column filled, or wrong value passed in to move_
     fn play(&self, move_: &str) -> Result<Self> {
         match self.state {
             NonTerminal => {}
@@ -83,11 +94,41 @@ impl Game {
         Ok(grid)
     }
 
-    fn get_state(grid: u64, mask: u64) -> State {
-        for direction in [1, 6, 7, 8] {
-            let intersected = grid << direction & grid;
-            if intersected << 2 * direction & intersected != 0 { return Win; }
+    /// returns Player to play
+    fn to_play(&self) -> Player { (self.position.len() % 2).into() }
+}
+
+impl Display for Game {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "\x1b[4m 1  2  3  4  5  6  7 \x1b[0m")?;
+        let p64 = self.to_play() as u64;
+        for m in (0..6).rev() {
+            for n in 0..7 {
+                let space = 1 << m << 7 * n;
+                if self.mask & (1 << m << 7 * n) == 0 {
+                    write!(f, " . ")?;
+                    continue;
+                }
+                match p64 == (self.grid & space) >> 7 * n >> m {
+                    true => write!(f, "\x1b[31m X \x1b[0m")?,
+                    false => write!(f, "\x1b[33m O \x1b[0m")?,
+                }
+            }
+            writeln!(f)?;
         }
-        if mask & 279258638311359 == 279258638311359 { Draw } else { NonTerminal }
+        write!(f, "\x1b[4m")?;
+        match self.state {
+            NonTerminal => match p64.into() {
+                Player1 => writeln!(f, "to play:\x1b[31m X \x1b[0m")?,
+                Player2 => writeln!(f, "to play:\x1b[33m O \x1b[0m")?,
+            }
+            Win => match p64.into() {
+                Player1 => writeln!(f, "winner:\x1b[33m O \x1b[0m")?,
+                Player2 => writeln!(f, "winner:\x1b[31m X \x1b[0m")?,
+            }
+            Draw => writeln!(f, "game drawn")?
+        }
+        writeln!(f, "\x1b[0m")?;
+        Ok(())
     }
 }
