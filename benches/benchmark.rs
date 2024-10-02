@@ -15,8 +15,8 @@ fn bench_eval(c: &mut Criterion) {
         // ("Begin-Hard", "Test_L1_R3"),
     ] {
         let reader = BufReader::new(File::open(path.join(test_set_file_name)).unwrap());
-        let test_set = black_box(read_to_string(reader)
-            .expect(format!("failed to read test set {}", test_set_file_name).as_str())
+        let test_set_content = read_to_string(reader).expect(format!("failed to read test set {}", test_set_file_name).as_str());
+        let test_set = black_box(test_set_content
             .lines()
             .map(|line| {
                 let position_score = line.split_whitespace().collect::<Vec<&str>>();
