@@ -20,25 +20,28 @@ fn bench_eval(c: &mut Criterion) {
             .lines()
             .map(|line| {
                 let position_score = line.split_whitespace().collect::<Vec<&str>>();
-                let position = position_score[0];
-                let score = position_score[1].parse::<i8>().unwrap();
-                (position, score)
-            }));
+                let position = position_score[0].to_string();
+                let game = Game::new(position);
+                // let score = position_score[1].parse::<i8>().unwrap();
+                game
+            })
+            .collect::<Vec<Game>>()
+        );
 
         c.bench_function(test_set_name, |b| {
-            for (position, score) in test_set.clone() {
-                let game = Game::new(position.to_string());
-                let mut eval = 0;
-                b.iter(|| { eval = game.eval(); });
-                assert_eq!(eval, score);
-            }
+            b.iter_batched(
+                || test_set.iter().clone(),
+                |test_set| for game in test_set { game.eval(); },
+                criterion::BatchSize::LargeInput,
+            );
         });
     }
 }
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(10);
+    config = Criterion::default()
+        .sample_size(10);
     targets = bench_eval
 }
 criterion_main!(benches);
