@@ -9,7 +9,7 @@ use std::fmt::{Display, Formatter};
 /// // game = Game { position: "4453", grid: 4210688, mask: 274743296, state: NonTerminal }
 ///
 /// ```
-/// ```
+/// ```s
 ///         grid                    mask
 ///  0  0  0  0  0  0  0     0  0  0  0  0  0  0
 ///  0  0  0  0  0  0  0     0  0  0  0  0  0  0
@@ -52,17 +52,18 @@ impl Game {
         grid.play(move_).unwrap()
     }
 
-    fn get_state(grid: u64, mask: u64) -> State {
-        for direction in [1, 6, 7, 8] {
-            let intersected = grid << direction & grid;
-            if intersected << 2 * direction & intersected != 0 { return Win; }
-        }
-        if mask & 279258638311359 == 279258638311359 { Draw } else { NonTerminal }
-    }
+    /// returns the score of the game's position
+    /// where a position has
+    /// - a positive score if the current player can win. 1 if they win with their last stone, 2 if
+    ///   they win with their second to last stone, and so on...
+    /// - a score of 0 if the game will end by a draw game
+    /// - a negative score if the current player lose whatever they play. -1 if their opponent wins
+    ///   with their last stone, -2 if their opponent wins with their second to last stone, and so
+    ///   on...
+    pub fn eval(&self) -> i8 { self.negamax() }
 
-    /// returns new game where move_ was played
-    /// error if game.state is terminal, column filled, or wrong value passed in to move_
-    fn play(&self, move_: &str) -> Result<Self> {
+    /// returns new Ok(Game) where move_ was played
+    pub fn play(&self, move_: &str) -> Result<Self> {
         match self.state {
             NonTerminal => {}
             Win | Draw => { return Err("self.state is terminal; game has concluded".into()) }
@@ -92,6 +93,34 @@ impl Game {
             state,
         };
         Ok(grid)
+    }
+
+
+    fn get_state(grid: u64, mask: u64) -> State {
+        for direction in [1, 6, 7, 8] {
+            let intersected = grid << direction & grid;
+            if intersected << 2 * direction & intersected != 0 { return Win; }
+        }
+        if mask & 279258638311359 == 279258638311359 { Draw } else { NonTerminal }
+    }
+
+    fn negamax(&self) -> i8 {
+        match self.state {
+            NonTerminal => {}
+            Win => return (self.position.len() as i8 - 43) >> 1,
+            Draw => return 0,
+        }
+        let mut max = i8::MIN + 1;
+        for move_ in ["4", "3", "5", "2", "6", "1", "7"] {
+            match self.play(move_) {
+                Ok(game) => {
+                    let score = -game.negamax();
+                    if score > max { max = score; }
+                }
+                Err(_) => {}
+            }
+        }
+        max
     }
 
     /// returns Player to play

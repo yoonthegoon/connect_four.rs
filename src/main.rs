@@ -1,13 +1,8 @@
-mod connect_four;
-mod error;
-mod hash;
-mod prelude;
-mod result;
-
-use crate::prelude::*;
+use connect_four::prelude::*;
 
 fn main() -> Result<()> {
-    let game = Game::new("4453".to_string());
+    let game = Game::new("211376455663355325112113664364524722".to_string());
     println!("{}", game);
+    println!("{}", game.eval());
     Ok(())
 }
