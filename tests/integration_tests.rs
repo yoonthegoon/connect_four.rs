@@ -25,7 +25,7 @@ fn test_eval(test_set_file_name: &str) {
 #[test]
 fn test_end_easy() { test_eval("Test_L3_R1") }
 
-// #[test]
+#[test]
 fn test_middle_easy() { test_eval("Test_L2_R1") }
 
 // #[test]
