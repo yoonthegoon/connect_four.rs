@@ -8,7 +8,7 @@ fn bench_eval(c: &mut Criterion) {
     let path = Path::new("fixtures/");
     for (test_set_name, test_set_file_name) in [
         ("End-Easy", "Test_L3_R1"),
-        // ("Middle-Easy", "Test_L2_R1"),
+        ("Middle-Easy", "Test_L2_R1"),
         // ("Middle-Medium", "Test_L2_R2"),
         // ("Begin-Easy", "Test_L1_R1"),
         // ("Begin-Medium", "Test_L1_R2"),

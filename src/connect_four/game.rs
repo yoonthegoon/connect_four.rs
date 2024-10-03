@@ -63,7 +63,20 @@ impl Game {
     ///   on...
     pub fn eval(&self) -> i8 {
         let mut transposition_table = HashMap::with_hasher(BuildConnectFourHasher);
-        self.negamax(i8::MIN + 1, i8::MAX, &mut transposition_table)
+
+        let mut min = -(42 - self.moves as i8) / 2;
+        let mut max = (43 - self.moves as i8) / 2;
+        while min < max {
+            let mut mid = min + (max - min) / 2;
+            if mid <= 0 && min / 2 < mid {
+                mid = min / 2;
+            } else if mid >= 0 && max / 2 > mid {
+                mid = max / 2;
+            }
+            let score = self.negamax(mid, mid + 1, &mut transposition_table);
+            if score <= mid { max = score; } else { min = score; }
+        }
+        min
     }
 
     /// returns new Ok(Game) where move_ was played
