@@ -5,7 +5,7 @@ use std::io::{read_to_string, BufReader};
 use std::path::Path;
 
 fn bench_eval(c: &mut Criterion) {
-    let path = Path::new("benches/data");
+    let path = Path::new("fixtures/");
     for (test_set_name, test_set_file_name) in [
         ("End-Easy", "Test_L3_R1"),
         // ("Middle-Easy", "Test_L2_R1"),
@@ -20,7 +20,7 @@ fn bench_eval(c: &mut Criterion) {
             .lines()
             .map(|line| {
                 let position_score = line.split_whitespace().collect::<Vec<&str>>();
-                let position = position_score[0].to_string();
+                let position = position_score[0];
                 let game = Game::new(position);
                 // let score = position_score[1].parse::<i8>().unwrap();
                 game
@@ -38,10 +38,5 @@ fn bench_eval(c: &mut Criterion) {
     }
 }
 
-criterion_group! {
-    name = benches;
-    config = Criterion::default()
-        .sample_size(10);
-    targets = bench_eval
-}
+criterion_group!(benches, bench_eval);
 criterion_main!(benches);

@@ -4,9 +4,9 @@ use std::fmt::{Display, Formatter};
 /// ```
 /// use connect_four::prelude::*;
 ///
-/// let game1 = Game::new("445".to_string()).play("3").unwrap();
-/// let game2 = Game::new("4453".to_string());
-/// // Game { position: "4453", grid: 4210688, mask: 274743296, state: NonTerminal }
+/// let game1 = Game::new("445").play(2).unwrap(); // column in play is 0-indexed
+/// let game2 = Game::new("4453");
+/// // Game { moves: 4, grid: 4210688, mask: 274743296, state: NonTerminal }
 /// assert_eq!(game1, game2);
 /// ```
 //         grid                    mask
@@ -28,26 +28,28 @@ use std::fmt::{Display, Formatter};
 //  0  7 14 21 28 35 42     .  .  O  X  X  .  .
 #[derive(Debug, PartialEq)]
 pub struct Game {
-    position: String,
+    moves: usize,
     grid: u64,
     mask: u64,
     state: State,
 }
 
 impl Game {
-    pub fn new(position: String) -> Self {
-        if position.len() == 0 {
-            return Game {
-                position,
-                grid: 0,
-                mask: 0,
-                state: NonTerminal,
-            };
-        }
+    pub fn new(position: &str) -> Self {
+        let mut game = Game {
+            moves: 0,
+            grid: 0,
+            mask: 0,
+            state: NonTerminal,
+        };
 
-        let (pos_str, move_) = position.split_at(position.len() - 1);
-        let grid = Game::new(pos_str.to_string());
-        grid.play(move_).unwrap()
+        if position.len() == 0 { return game; }
+
+        for ch in position.chars() {
+            let column = ch.to_string().parse::<usize>().unwrap() - 1;
+            game = game.play(column).unwrap();
+        }
+        game
     }
 
     /// returns the score of the game's position
@@ -58,34 +60,26 @@ impl Game {
     /// - a negative score if the current player lose whatever they play. -1 if their opponent wins
     ///   with their last stone, -2 if their opponent wins with their second to last stone, and so
     ///   on...
-    pub fn eval(&self) -> i8 { self.negamax() }
+    pub fn eval(&self) -> i8 { self.negamax(i8::MIN + 1, i8::MAX) }
 
     /// returns new Ok(Game) where move_ was played
-    pub fn play(&self, move_: &str) -> Result<Self> {
+    pub fn play(&self, column: usize) -> Result<Self> {
         match self.state {
             NonTerminal => {}
             Win | Draw => { return Err("self.state is terminal; game has concluded".into()) }
         }
-        let mask;
-        match move_.parse::<usize>() {
-            Ok(0) => return Err(ValueError("play(move_: &str) expects digit 1-7; got 0".to_string())),
-            Ok(a) => {
-                if a > 7 { return Err(ValueError(format!("play(move_: &str) expects digit 1-7; got {}", move_))); }
-                let x = 1 << 7 * (a - 1);
-                let no_go = x << 5;
-                if self.mask & no_go == no_go { return Err(format!("column {} already filled", move_).into()); }
-                mask = self.mask + x | self.mask;
-            }
-            Err(e) => return Err(e.into()),
-        }
+        if column > 6 { return Err(ValueError(format!("play(column: usize) expects column < 7; got {}", column))); }
+        let x = 1 << 7 * column;
+        let no_go = x << 5;
+        if self.mask & no_go == no_go { return Err(format!("column {} already filled", column).into()); }
 
-        let mut position = self.position.clone();
-        position.push_str(move_);
+        let moves = self.moves + 1;
+        let mask = self.mask + x | self.mask;
         let grid = self.grid ^ mask;
         let state = Self::get_state(grid, mask);
 
         let grid = Game {
-            position,
+            moves,
             grid,
             mask,
             state,
@@ -101,27 +95,34 @@ impl Game {
         if mask & 279258638311359 == 279258638311359 { Draw } else { NonTerminal }
     }
 
-    fn negamax(&self) -> i8 {
+    fn negamax(&self, mut alpha: i8, mut beta: i8) -> i8 {
         match self.state {
             NonTerminal => {}
-            Win => return (self.position.len() as i8 - 43) >> 1,
+            Win => return (self.moves as i8 - 43) >> 1,
             Draw => return 0,
         }
-        let mut max = i8::MIN + 1;
-        for move_ in ["4", "3", "5", "2", "6", "1", "7"] {
-            match self.play(move_) {
+
+        let max = ((41 - self.moves as i8) >> 1) + 1;
+        if beta > max {
+            beta = max;
+            if alpha >= beta { return beta; }
+        }
+
+        for column in [3, 2, 4, 5, 1, 0, 6] {
+            match self.play(column) {
                 Ok(game) => {
-                    let score = -game.negamax();
-                    if score > max { max = score; }
+                    let score = -game.negamax(-beta, -alpha);
+                    if score >= beta { return score; }
+                    if score > alpha { alpha = score; }
                 }
                 Err(_) => {}
             }
         }
-        max
+        alpha
     }
 
     /// returns Player to play
-    fn to_play(&self) -> Player { (self.position.len() % 2).into() }
+    fn to_play(&self) -> Player { (self.moves).into() }
 }
 
 impl Display for Game {
