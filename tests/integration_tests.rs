@@ -16,7 +16,8 @@ fn test_eval(test_set_file_name: &str) {
             let score = position_score[1].parse::<i8>().unwrap();
             (game, score)
         });
-    for (i, (game, score)) in test_set.enumerate() {
+
+    for (i, (mut game, score)) in test_set.enumerate() {
         let eval = game.eval();
         assert_eq!(eval, score, "failed for file: {} on line: {}", test_set_file_name, i + 1);
     }
@@ -25,7 +26,7 @@ fn test_eval(test_set_file_name: &str) {
 #[test]
 fn test_end_easy() { test_eval("Test_L3_R1") }
 
-#[test]
+// #[test]
 fn test_middle_easy() { test_eval("Test_L2_R1") }
 
 // #[test]

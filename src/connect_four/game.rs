@@ -2,6 +2,8 @@ use crate::prelude::*;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
+const COLUMNS: [usize; 7] = [3, 2, 4, 5, 1, 0, 6];
+
 /// ```
 /// use connect_four::prelude::*;
 ///
@@ -82,8 +84,8 @@ impl Game {
     /// returns new Ok(Game) where move_ was played
     pub fn play(&self, column: usize) -> Result<Self> {
         match self.state {
-            NonTerminal => {}
             Win | Draw => { return Err("self.state is terminal; game has concluded".into()) }
+            _ => {}
         }
         if column > 6 { return Err(ValueError(format!("play(column: usize) expects column < 7; got {}", column))); }
         let x = 1 << 7 * column;
@@ -94,6 +96,8 @@ impl Game {
         let mask = self.mask + x | self.mask;
         let grid = self.grid ^ mask;
         let state = Self::get_state(grid, mask);
+
+        // if state == Win { self.state = Lose; }
 
         let grid = Game {
             moves,
@@ -118,11 +122,17 @@ impl Game {
         mut beta: i8,
         transposition_table: &mut HashMap<u64, i8, BuildConnectFourHasher>,
     ) -> i8 {
-        match self.state {
-            NonTerminal => {}
-            Win => return (self.moves as i8 - 43) >> 1,
-            Draw => return 0,
+        for column in COLUMNS {
+            match self.play(column) {
+                Ok(game) => match game.state {
+                    Win => return (43 - self.moves as i8) >> 1,
+                    Draw => return 0,
+                    _ => {}
+                }
+                Err(_) => {}
+            }
         }
+        // self.state = NonTerminal;
 
         let key = self.grid | self.mask + 4432676798593;
         let max = match transposition_table.get(&key) {
@@ -134,9 +144,10 @@ impl Game {
             if alpha >= beta { return beta; }
         }
 
-        for column in [3, 2, 4, 5, 1, 0, 6] {
+        for column in COLUMNS {
             match self.play(column) {
                 Ok(game) => {
+                    // if self.state == Lose { continue; }
                     let score = -game.negamax(-beta, -alpha, transposition_table);
                     if score >= beta { return score; }
                     if score > alpha { alpha = score; }
@@ -172,15 +183,15 @@ impl Display for Game {
         }
         write!(f, "\x1b[4m")?;
         match self.state {
-            NonTerminal => match p64.into() {
-                Player1 => writeln!(f, "to play:\x1b[31m X \x1b[0m")?,
-                Player2 => writeln!(f, "to play:\x1b[33m O \x1b[0m")?,
-            }
             Win => match p64.into() {
                 Player1 => writeln!(f, "winner:\x1b[33m O \x1b[0m")?,
                 Player2 => writeln!(f, "winner:\x1b[31m X \x1b[0m")?,
             }
-            Draw => writeln!(f, "game drawn")?
+            Draw => writeln!(f, "game drawn")?,
+            _ => match p64.into() {
+                Player1 => writeln!(f, "to play:\x1b[31m X \x1b[0m")?,
+                Player2 => writeln!(f, "to play:\x1b[33m O \x1b[0m")?,
+            }
         }
         write!(f, "\x1b[0m")?;
         Ok(())

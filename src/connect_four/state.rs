@@ -2,5 +2,6 @@
 pub enum State {
     NonTerminal,
     Win,
+    // Lose,
     Draw,
 }
