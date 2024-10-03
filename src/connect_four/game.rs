@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 /// ```
@@ -60,7 +61,10 @@ impl Game {
     /// - a negative score if the current player lose whatever they play. -1 if their opponent wins
     ///   with their last stone, -2 if their opponent wins with their second to last stone, and so
     ///   on...
-    pub fn eval(&self) -> i8 { self.negamax(i8::MIN + 1, i8::MAX) }
+    pub fn eval(&self) -> i8 {
+        let mut transposition_table = HashMap::with_hasher(BuildConnectFourHasher);
+        self.negamax(i8::MIN + 1, i8::MAX, &mut transposition_table)
+    }
 
     /// returns new Ok(Game) where move_ was played
     pub fn play(&self, column: usize) -> Result<Self> {
@@ -95,14 +99,23 @@ impl Game {
         if mask & 279258638311359 == 279258638311359 { Draw } else { NonTerminal }
     }
 
-    fn negamax(&self, mut alpha: i8, mut beta: i8) -> i8 {
+    fn negamax(
+        &self,
+        mut alpha: i8,
+        mut beta: i8,
+        transposition_table: &mut HashMap<u64, i8, BuildConnectFourHasher>,
+    ) -> i8 {
         match self.state {
             NonTerminal => {}
             Win => return (self.moves as i8 - 43) >> 1,
             Draw => return 0,
         }
 
-        let max = ((41 - self.moves as i8) >> 1) + 1;
+        let key = self.grid | self.mask + 4432676798593;
+        let max = match transposition_table.get(&key) {
+            Some(&value) => value - 19,
+            None => ((41 - self.moves as i8) >> 1) + 1,
+        };
         if beta > max {
             beta = max;
             if alpha >= beta { return beta; }
@@ -111,13 +124,14 @@ impl Game {
         for column in [3, 2, 4, 5, 1, 0, 6] {
             match self.play(column) {
                 Ok(game) => {
-                    let score = -game.negamax(-beta, -alpha);
+                    let score = -game.negamax(-beta, -alpha, transposition_table);
                     if score >= beta { return score; }
                     if score > alpha { alpha = score; }
                 }
                 Err(_) => {}
             }
         }
+        transposition_table.insert(key, alpha + 19);
         alpha
     }
 
